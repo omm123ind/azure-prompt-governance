@@ -1,0 +1,51 @@
+{
+  "version": "1.0",
+  "updated_at": "2026-07-19T00:00:00Z",
+  "rules": [
+    {
+      "id": "block_pii",
+      "description": "Block prompts with high-confidence PII detection",
+      "condition": "pii_confidence",
+      "threshold": 0.8,
+      "action": "block",
+      "notify": true,
+      "enabled": true
+    },
+    {
+      "id": "flag_jailbreak",
+      "description": "Flag jailbreak attempts above threshold",
+      "condition": "jailbreak_score",
+      "threshold": 0.6,
+      "action": "flag",
+      "notify": true,
+      "enabled": true
+    },
+    {
+      "id": "block_jailbreak_high",
+      "description": "Block high-confidence jailbreak attempts",
+      "condition": "jailbreak_score",
+      "threshold": 0.85,
+      "action": "block",
+      "notify": true,
+      "enabled": true
+    },
+    {
+      "id": "flag_harm",
+      "description": "Flag any harm category score above 4",
+      "condition": "max_harm_score",
+      "threshold": 4,
+      "action": "flag",
+      "notify": true,
+      "enabled": true
+    },
+    {
+      "id": "block_harm_high",
+      "description": "Block severe harm content",
+      "condition": "max_harm_score",
+      "threshold": 6,
+      "action": "block",
+      "notify": true,
+      "enabled": true
+    }
+  ]
+}
