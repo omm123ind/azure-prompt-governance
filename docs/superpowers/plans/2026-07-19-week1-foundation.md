@@ -1101,6 +1101,187 @@ git commit -m "test: prove Event Hub to PromptAuditLog_CL ingestion pipeline"
 
 ---
 
+### Task 8b: Build the missing Event Hub → Log Analytics consumer
+
+**Discovered during Task 8 execution**: a Data Collection Rule does not automatically pull data from an Event Hub. The DCR created in Task 8 (`dcr-prompt-audit`, confirmed provisioned) only accepts data pushed to it via the Azure Monitor Logs Ingestion API. Nothing was consuming `eh-audit-events` and pushing to it — `PromptAuditLog_CL` was confirmed empty via direct KQL query. This task builds that missing consumer.
+
+**Files:**
+- Create: `backend/log_ingest_consumer/__init__.py`
+- Create: `backend/log_ingest_consumer/function.py`
+- Modify: `backend/requirements.txt` (add `azure-monitor-ingestion>=1.0.0`)
+- Modify: `backend/tests/integration/test_event_hub_to_log_analytics.py` (remove the flawed direct-query-after-sleep approach; the new test should invoke the consumer function's ingestion logic directly rather than relying on an automatic Event Hub → DCR binding that doesn't exist)
+
+**Interfaces:**
+- Consumes: `shared.models.AuditEvent` (Task 2), the real DCR `dcr-prompt-audit`'s `immutableId` and stream name `Custom-PromptAuditLog` (Task 8), a Data Collection Endpoint (DCE) that must be created and linked to the DCR before ingestion will work.
+- Produces: `push_to_log_analytics(event: AuditEvent) -> None` using `azure.monitor.ingestion.LogsIngestionClient` — this is what an Event-Hub-triggered function body calls per received message.
+
+- [ ] **Step 1: Create the Data Collection Endpoint** (real Azure action, region must match the DCR's `eastus`)
+
+```bash
+az monitor data-collection endpoint create \
+  -g rg-prompt-governance-dev \
+  --name dce-prompt-audit \
+  --location eastus \
+  --public-network-access Enabled
+```
+
+Expected: JSON with `"provisioningState": "Succeeded"` and a `logsIngestion.endpoint` URL in the output — save this URL.
+
+- [ ] **Step 2: Link the DCE to the existing DCR**
+
+```bash
+DCE_ID=$(az monitor data-collection endpoint show -g rg-prompt-governance-dev -n dce-prompt-audit --query id -o tsv)
+az monitor data-collection rule update \
+  -g rg-prompt-governance-dev \
+  --name dcr-prompt-audit \
+  --data-collection-endpoint-id "$DCE_ID"
+```
+
+Expected: JSON showing `"dataCollectionEndpointId"` set to the DCE's resource ID.
+
+- [ ] **Step 3: Add the ingestion SDK to requirements**
+
+Add to `backend/requirements.txt`:
+```
+azure-monitor-ingestion>=1.0.0
+```
+
+Install: `backend/.venv311/Scripts/pip.exe install azure-monitor-ingestion>=1.0.0`
+
+- [ ] **Step 4: Write `backend/log_ingest_consumer/__init__.py`** (empty)
+
+- [ ] **Step 5: Write `backend/log_ingest_consumer/function.py`**
+
+```python
+import json
+import logging
+import os
+
+import azure.functions as func
+from azure.identity import DefaultAzureCredential
+from azure.monitor.ingestion import LogsIngestionClient
+
+
+def push_to_log_analytics(event_dict: dict) -> None:
+    endpoint = os.environ["AZURE_DCE_LOGS_INGESTION_ENDPOINT"]
+    rule_id = os.environ["AZURE_DCR_IMMUTABLE_ID"]
+    stream_name = "Custom-PromptAuditLog"
+
+    credential = DefaultAzureCredential()
+    client = LogsIngestionClient(endpoint=endpoint, credential=credential)
+
+    row = {
+        "event_id_s": event_dict["event_id"],
+        "session_id_s": event_dict["session_id"],
+        "user_id_s": event_dict["user_id"],
+        "team_id_s": event_dict["team_id"],
+        "prompt_hash_s": event_dict["prompt_hash"],
+        "response_hash_s": event_dict["response_hash"],
+        "pii_detected_b": event_dict["pii_detected"],
+        "pii_confidence_d": event_dict["pii_confidence"],
+        "pii_categories_s": json.dumps(event_dict["pii_categories"]),
+        "jailbreak_score_d": event_dict["jailbreak_score"],
+        "harm_hate_score_d": event_dict["harm_hate_score"],
+        "harm_violence_score_d": event_dict["harm_violence_score"],
+        "harm_selfharm_score_d": event_dict["harm_selfharm_score"],
+        "harm_sexual_score_d": event_dict["harm_sexual_score"],
+        "action_taken_s": event_dict["action_taken"],
+        "block_reason_s": event_dict.get("block_reason") or "",
+        "prompt_tokens_d": event_dict["prompt_tokens"],
+        "completion_tokens_d": event_dict["completion_tokens"],
+        "cost_usd_d": event_dict["cost_usd"],
+        "model_s": event_dict["model"],
+        "latency_ms_d": event_dict["latency_ms"],
+    }
+    client.upload(rule_id=rule_id, stream_name=stream_name, logs=[row])
+
+
+def main(event: func.EventHubEvent):
+    body = event.get_body().decode("utf-8")
+    event_dict = json.loads(body)
+    logging.info("consuming audit event %s from Event Hub", event_dict.get("event_id"))
+    push_to_log_analytics(event_dict)
+```
+
+- [ ] **Step 6: Rewrite the integration test to call the consumer directly** (proves the ingestion logic works without depending on a local Event-Hub-triggered Functions host, which Azure Functions Core Tools CAN run locally against a real Event Hub, but that's a heavier local-runtime test better suited to Week 5's CI — this test proves the Logs Ingestion API call itself is correct)
+
+Replace `backend/tests/integration/test_event_hub_to_log_analytics.py` with:
+```python
+import os
+import sys
+import time
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from azure.monitor.query import LogsQueryClient
+from azure.identity import AzureCliCredential
+
+from log_writer.function import build_audit_event
+from log_ingest_consumer.function import push_to_log_analytics
+
+
+def test_pushed_event_appears_in_log_analytics():
+    event = build_audit_event(
+        prompt="test canonical prompt for week 1 pipeline check",
+        response="test response",
+        classification={
+            "pii_detected": False, "pii_confidence": 0.0, "pii_categories": [],
+            "jailbreak_score": 0.0, "harm_hate_score": 0, "harm_violence_score": 0,
+            "harm_selfharm_score": 0, "harm_sexual_score": 0,
+            "classification_latency_ms": 1,
+        },
+        action="pass",
+        model="gpt-4o-mini",
+        prompt_tokens=10,
+        completion_tokens=5,
+        latency_ms=50,
+    )
+
+    push_to_log_analytics(event.model_dump())
+
+    time.sleep(180)  # Log Analytics ingestion lag, even via direct API push
+
+    credential = AzureCliCredential()
+    logs_client = LogsQueryClient(credential)
+    workspace_id = os.environ["AZURE_LOG_ANALYTICS_WORKSPACE_ID"]
+    query = f"PromptAuditLog_CL | where event_id_s == '{event.event_id}' | take 1"
+    response = logs_client.query_workspace(workspace_id, query, timespan=None)
+    assert len(response.tables[0].rows) == 1
+```
+
+- [ ] **Step 7: Get the DCE logs ingestion endpoint and DCR immutableId, add to `backend/local.settings.json`**
+
+```bash
+az monitor data-collection endpoint show -g rg-prompt-governance-dev -n dce-prompt-audit --query logsIngestion.endpoint -o tsv
+az monitor data-collection rule show -g rg-prompt-governance-dev --name dcr-prompt-audit --query immutableId -o tsv
+```
+
+Add both as `AZURE_DCE_LOGS_INGESTION_ENDPOINT` and `AZURE_DCR_IMMUTABLE_ID` to `backend/local.settings.json` (gitignored).
+
+- [ ] **Step 8: Grant the logged-in identity the Monitoring Metrics Publisher role on the DCR** (required for `LogsIngestionClient` data-plane push — this is the DCR-equivalent of the Blob RBAC gap hit in Task 6; if you hit a permissions error here, do NOT self-assign — report it and let the user grant it, same pattern as Task 6)
+
+```bash
+az role assignment create \
+  --assignee omm123ind@hotmail.com \
+  --role "Monitoring Metrics Publisher" \
+  --scope /subscriptions/66a892ff-3e36-4ba3-913b-986ff4c24c58/resourceGroups/rg-prompt-governance-dev/providers/Microsoft.Insights/dataCollectionRules/dcr-prompt-audit
+```
+
+- [ ] **Step 9: Run the test, time-boxed** (max ~2 attempts, ~3-5 min wait each, per Task 8's original time-boxing rule — do not loop indefinitely)
+
+Run: `cd backend && ../backend/.venv311/Scripts/python.exe -m pytest tests/integration/test_event_hub_to_log_analytics.py -v -s`
+Expected: `1 passed`, or a clear report of 0 rows after two attempts with the exact query used.
+
+- [ ] **Step 10: Commit**
+
+```bash
+git add backend/log_ingest_consumer backend/requirements.txt backend/tests/integration/test_event_hub_to_log_analytics.py
+git commit -m "feat: add Event Hub consumer pushing to Log Analytics via Logs Ingestion API"
+```
+
+---
+
 ### Task 9: Configure the APIM API and prove the full round trip
 
 **Files:**
