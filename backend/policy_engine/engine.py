@@ -44,21 +44,26 @@ def get_score_for_condition(classification_result: dict, condition: str) -> floa
 
 def evaluate(classification_result: dict) -> dict:
     rules = get_rules()
-    action = "pass"
-    triggered_rule = None
-    should_notify = False
-    for rule in sorted(rules, key=lambda r: r["threshold"], reverse=True):
-        if not rule["enabled"]:
+
+    # Two condition-scoped passes: block rules always win over flag rules,
+    # so we check all block rules first, then all flag rules. This avoids
+    # comparing raw `threshold` values across rules with different
+    # `condition` types (e.g. max_harm_score vs pii_confidence), which have
+    # unrelated scales and are not meaningfully sortable against each other.
+    # Within each pass, rules are evaluated in rules.json order (stable,
+    # predictable tie-break) and the first match wins.
+    for rule in rules:
+        if not rule["enabled"] or rule["action"] != "block":
             continue
         score = get_score_for_condition(classification_result, rule["condition"])
         if score >= rule["threshold"]:
-            if rule["action"] == "block":
-                action = "block"
-                triggered_rule = rule["id"]
-                should_notify = rule["notify"]
-                break
-            elif rule["action"] == "flag" and action != "block":
-                action = "flag"
-                triggered_rule = rule["id"]
-                should_notify = rule["notify"]
-    return {"action": action, "triggered_rule": triggered_rule, "notify": should_notify}
+            return {"action": "block", "triggered_rule": rule["id"], "notify": rule["notify"]}
+
+    for rule in rules:
+        if not rule["enabled"] or rule["action"] != "flag":
+            continue
+        score = get_score_for_condition(classification_result, rule["condition"])
+        if score >= rule["threshold"]:
+            return {"action": "flag", "triggered_rule": rule["id"], "notify": rule["notify"]}
+
+    return {"action": "pass", "triggered_rule": None, "notify": False}
