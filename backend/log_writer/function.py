@@ -1,11 +1,38 @@
 import hashlib
 import json
 import logging
+import os
 import uuid
 
 import azure.functions as func
+from azure.eventhub import EventData, EventHubProducerClient
 
 from shared.models import AuditEvent
+
+EVENT_HUB_NAME = "eh-audit-events"
+
+
+def publish_to_event_hub(event: AuditEvent) -> None:
+    """Publish the audit event onto Event Hub for the log_ingest_consumer.
+
+    No-ops with a warning if AZURE_EVENT_HUB_CONNECTION_STRING is not set,
+    so local/test usage that doesn't need Event Hub doesn't crash.
+    """
+    conn_str = os.environ.get("AZURE_EVENT_HUB_CONNECTION_STRING")
+    if not conn_str:
+        logging.warning(
+            "AZURE_EVENT_HUB_CONNECTION_STRING not set; skipping Event Hub publish for %s",
+            event.event_id,
+        )
+        return
+
+    producer = EventHubProducerClient.from_connection_string(
+        conn_str, eventhub_name=EVENT_HUB_NAME
+    )
+    with producer:
+        batch = producer.create_batch()
+        batch.add(EventData(event.model_dump_json()))
+        producer.send_batch(batch)
 
 
 def hash_text(text: str) -> str:
@@ -72,6 +99,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         latency_ms=body.get("latency_ms", 0),
     )
     logging.info("audit event built: %s", event.event_id)
+    publish_to_event_hub(event)
     return func.HttpResponse(
         json.dumps({"received": True, "event_id": event.event_id}),
         status_code=200,
