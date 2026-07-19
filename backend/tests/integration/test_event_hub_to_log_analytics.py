@@ -1,20 +1,18 @@
-import json
 import os
 import sys
 import time
-import uuid
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from azure.eventhub import EventHubProducerClient, EventData
 from azure.monitor.query import LogsQueryClient
 from azure.identity import AzureCliCredential
 
 from log_writer.function import build_audit_event
+from log_ingest_consumer.function import push_to_log_analytics
 
 
-def test_published_event_appears_in_log_analytics():
+def test_pushed_event_appears_in_log_analytics():
     event = build_audit_event(
         prompt="test canonical prompt for week 1 pipeline check",
         response="test response",
@@ -31,16 +29,9 @@ def test_published_event_appears_in_log_analytics():
         latency_ms=50,
     )
 
-    conn_str = os.environ["AZURE_EVENT_HUB_CONNECTION_STRING"]
-    producer = EventHubProducerClient.from_connection_string(
-        conn_str, eventhub_name="eh-audit-events"
-    )
-    with producer:
-        batch = producer.create_batch()
-        batch.add(EventData(event.model_dump_json()))
-        producer.send_batch(batch)
+    push_to_log_analytics(event.model_dump())
 
-    time.sleep(120)  # first ingestion can take ~10 minutes per spec Section 11 Day 4-5; CI should poll instead
+    time.sleep(180)  # Log Analytics ingestion lag, even via direct API push
 
     credential = AzureCliCredential()
     logs_client = LogsQueryClient(credential)
