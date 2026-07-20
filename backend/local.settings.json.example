@@ -1,0 +1,13 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "python",
+    "OPENAI_API_KEY": "sk-...",
+    "AZURE_STORAGE_CONNECTION_STRING": "UseDevelopmentStorage=true",
+    "POLICY_BLOB_CONTAINER": "governance-policies",
+    "POLICY_BLOB_NAME": "rules.json",
+    "AZURE_EVENT_HUB_CONNECTION_STRING": "Endpoint=sb://...",
+    "AZURE_EVENT_HUB_NAME": "eh-audit-events"
+  }
+}

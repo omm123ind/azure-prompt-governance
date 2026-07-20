@@ -1,0 +1,31 @@
+{
+  "properties": {
+    "schema": {
+      "name": "PromptAuditLog_CL",
+      "columns": [
+        { "name": "TimeGenerated", "type": "datetime" },
+        { "name": "event_id_s", "type": "string" },
+        { "name": "session_id_s", "type": "string" },
+        { "name": "user_id_s", "type": "string" },
+        { "name": "team_id_s", "type": "string" },
+        { "name": "prompt_hash_s", "type": "string" },
+        { "name": "response_hash_s", "type": "string" },
+        { "name": "pii_detected_b", "type": "boolean" },
+        { "name": "pii_confidence_d", "type": "real" },
+        { "name": "pii_categories_s", "type": "string" },
+        { "name": "jailbreak_score_d", "type": "real" },
+        { "name": "harm_hate_score_d", "type": "real" },
+        { "name": "harm_violence_score_d", "type": "real" },
+        { "name": "harm_selfharm_score_d", "type": "real" },
+        { "name": "harm_sexual_score_d", "type": "real" },
+        { "name": "action_taken_s", "type": "string" },
+        { "name": "block_reason_s", "type": "string" },
+        { "name": "prompt_tokens_d", "type": "real" },
+        { "name": "completion_tokens_d", "type": "real" },
+        { "name": "cost_usd_d", "type": "real" },
+        { "name": "model_s", "type": "string" },
+        { "name": "latency_ms_d", "type": "real" }
+      ]
+    }
+  }
+}
