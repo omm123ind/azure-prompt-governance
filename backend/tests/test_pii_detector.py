@@ -81,3 +81,57 @@ def test_pii_detector_handles_malformed_json_gracefully(monkeypatch):
 
     result = detect_pii("anything")
     assert result == {"pii_detected": False, "confidence": 0.0, "categories_found": []}
+
+
+def test_pii_detector_handles_non_numeric_confidence_gracefully(monkeypatch):
+    class FakeMessage:
+        content = '{"pii_detected": true, "confidence": "high", "categories_found": ["email"]}'
+
+    class FakeChoice:
+        message = FakeMessage()
+
+    class FakeResponse:
+        choices = [FakeChoice()]
+
+    class FakeCompletions:
+        def create(self, **kwargs):
+            return FakeResponse()
+
+    class FakeChat:
+        completions = FakeCompletions()
+
+    class FakeClient:
+        chat = FakeChat()
+
+    import classification.pii_detector as pii_detector_module
+    monkeypatch.setattr(pii_detector_module, "get_openai_client", lambda: FakeClient())
+
+    result = detect_pii("anything")
+    assert result == {"pii_detected": False, "confidence": 0.0, "categories_found": []}
+
+
+def test_pii_detector_handles_none_content_gracefully(monkeypatch):
+    class FakeMessage:
+        content = None
+
+    class FakeChoice:
+        message = FakeMessage()
+
+    class FakeResponse:
+        choices = [FakeChoice()]
+
+    class FakeCompletions:
+        def create(self, **kwargs):
+            return FakeResponse()
+
+    class FakeChat:
+        completions = FakeCompletions()
+
+    class FakeClient:
+        chat = FakeChat()
+
+    import classification.pii_detector as pii_detector_module
+    monkeypatch.setattr(pii_detector_module, "get_openai_client", lambda: FakeClient())
+
+    result = detect_pii("anything")
+    assert result == {"pii_detected": False, "confidence": 0.0, "categories_found": []}

@@ -42,6 +42,9 @@ def detect_pii(prompt_text: str) -> dict:
     )
 
     text = response.choices[0].message.content
+    if text is None:
+        logging.warning("pii_detector: OpenAI response content was None")
+        return dict(SAFE_DEFAULT)
     text = text.strip().removeprefix("```json").removesuffix("```").strip()
 
     try:
@@ -54,8 +57,12 @@ def detect_pii(prompt_text: str) -> dict:
         logging.warning("pii_detector: OpenAI response missing expected keys")
         return dict(SAFE_DEFAULT)
 
-    return {
-        "pii_detected": bool(result.get("pii_detected", False)),
-        "confidence": float(result.get("confidence", 0.0)),
-        "categories_found": list(result.get("categories_found", [])),
-    }
+    try:
+        return {
+            "pii_detected": bool(result.get("pii_detected", False)),
+            "confidence": float(result.get("confidence", 0.0)),
+            "categories_found": list(result.get("categories_found", [])),
+        }
+    except (ValueError, TypeError):
+        logging.warning("pii_detector: OpenAI response had malformed field values")
+        return dict(SAFE_DEFAULT)

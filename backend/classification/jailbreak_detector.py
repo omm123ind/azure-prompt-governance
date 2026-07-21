@@ -43,6 +43,9 @@ def detect_jailbreak(prompt_text: str) -> dict:
     )
 
     text = response.choices[0].message.content
+    if text is None:
+        logging.warning("jailbreak_detector: OpenAI response content was None")
+        return dict(SAFE_DEFAULT)
     text = text.strip().removeprefix("```json").removesuffix("```").strip()
 
     try:
@@ -55,8 +58,12 @@ def detect_jailbreak(prompt_text: str) -> dict:
         logging.warning("jailbreak_detector: OpenAI response missing expected keys")
         return dict(SAFE_DEFAULT)
 
-    return {
-        "jailbreak_detected": bool(result.get("jailbreak_detected", False)),
-        "confidence": float(result.get("confidence", 0.0)),
-        "pattern": result.get("pattern"),
-    }
+    try:
+        return {
+            "jailbreak_detected": bool(result.get("jailbreak_detected", False)),
+            "confidence": float(result.get("confidence", 0.0)),
+            "pattern": result.get("pattern"),
+        }
+    except (ValueError, TypeError):
+        logging.warning("jailbreak_detector: OpenAI response had malformed field values")
+        return dict(SAFE_DEFAULT)

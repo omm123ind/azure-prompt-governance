@@ -81,3 +81,57 @@ def test_jailbreak_detector_handles_malformed_json_gracefully(monkeypatch):
 
     result = detect_jailbreak("anything")
     assert result == {"jailbreak_detected": False, "confidence": 0.0, "pattern": None}
+
+
+def test_jailbreak_detector_handles_non_numeric_confidence_gracefully(monkeypatch):
+    class FakeMessage:
+        content = '{"jailbreak_detected": true, "confidence": "high", "pattern": "dan_prompt"}'
+
+    class FakeChoice:
+        message = FakeMessage()
+
+    class FakeResponse:
+        choices = [FakeChoice()]
+
+    class FakeCompletions:
+        def create(self, **kwargs):
+            return FakeResponse()
+
+    class FakeChat:
+        completions = FakeCompletions()
+
+    class FakeClient:
+        chat = FakeChat()
+
+    import classification.jailbreak_detector as jailbreak_detector_module
+    monkeypatch.setattr(jailbreak_detector_module, "get_openai_client", lambda: FakeClient())
+
+    result = detect_jailbreak("anything")
+    assert result == {"jailbreak_detected": False, "confidence": 0.0, "pattern": None}
+
+
+def test_jailbreak_detector_handles_none_content_gracefully(monkeypatch):
+    class FakeMessage:
+        content = None
+
+    class FakeChoice:
+        message = FakeMessage()
+
+    class FakeResponse:
+        choices = [FakeChoice()]
+
+    class FakeCompletions:
+        def create(self, **kwargs):
+            return FakeResponse()
+
+    class FakeChat:
+        completions = FakeCompletions()
+
+    class FakeClient:
+        chat = FakeChat()
+
+    import classification.jailbreak_detector as jailbreak_detector_module
+    monkeypatch.setattr(jailbreak_detector_module, "get_openai_client", lambda: FakeClient())
+
+    result = detect_jailbreak("anything")
+    assert result == {"jailbreak_detected": False, "confidence": 0.0, "pattern": None}
