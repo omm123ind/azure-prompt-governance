@@ -1,0 +1,8 @@
+let lookback = 7d;
+PromptAuditLog_CL
+| where TimeGenerated > ago(lookback)
+| summarize
+    AvgHate = avg(harm_hate_score_d),
+    AvgViolence = avg(harm_violence_score_d),
+    AvgSelfHarm = avg(harm_selfharm_score_d),
+    AvgSexual = avg(harm_sexual_score_d)

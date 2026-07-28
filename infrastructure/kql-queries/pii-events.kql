@@ -1,0 +1,6 @@
+let lookback = 24h;
+PromptAuditLog_CL
+| where TimeGenerated > ago(lookback)
+| where pii_detected_b == true
+| project TimeGenerated, event_id_s, user_id_s, team_id_s, pii_categories_s, action_taken_s
+| order by TimeGenerated desc

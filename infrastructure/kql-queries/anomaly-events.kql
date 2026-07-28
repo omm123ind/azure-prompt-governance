@@ -1,0 +1,6 @@
+let lookback = 7d;
+PromptAuditLog_CL
+| where TimeGenerated > ago(lookback)
+| where action_taken_s == "anomaly"
+| project TimeGenerated, event_id_s, user_id_s, team_id_s, block_reason_s
+| order by TimeGenerated desc

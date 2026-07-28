@@ -1,0 +1,7 @@
+let lookback = 7d;
+let jailbreakThreshold = 0.6;
+PromptAuditLog_CL
+| where TimeGenerated > ago(lookback)
+| where jailbreak_score_d > jailbreakThreshold
+| summarize AttemptCount = count() by HourOfDay = hourofday(TimeGenerated)
+| order by HourOfDay asc

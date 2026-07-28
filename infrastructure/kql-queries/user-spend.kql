@@ -1,0 +1,9 @@
+let lookback = 7d;
+PromptAuditLog_CL
+| where TimeGenerated > ago(lookback)
+| summarize
+    TotalCostUsd = sum(cost_usd_d),
+    TotalPromptTokens = sum(prompt_tokens_d),
+    TotalCompletionTokens = sum(completion_tokens_d)
+  by user_id_s
+| top 20 by TotalCostUsd desc
