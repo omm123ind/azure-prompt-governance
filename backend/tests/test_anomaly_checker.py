@@ -32,9 +32,58 @@ def test_update_rolling_baseline_first_observation_seeds_baseline():
     assert anomaly_function.update_rolling_baseline(0.0, 1000) == 1000.0
 
 
-def test_update_rolling_baseline_applies_one_seventh_decay():
+def test_update_rolling_baseline_applies_hourly_decay_for_7_day_window():
+    decay = 1 / (7 * 24)
     result = anomaly_function.update_rolling_baseline(700.0, 1400)
-    assert round(result, 2) == round((700.0 * 6 / 7) + (1400 * 1 / 7), 2)
+    assert round(result, 4) == round((700.0 * (1 - decay)) + (1400 * decay), 4)
+
+
+class _FakeTable:
+    def __init__(self, columns, rows):
+        self.columns = columns
+        self.rows = rows
+
+
+class _FakeResponse:
+    def __init__(self, table):
+        self.tables = [table]
+
+
+class _FakeLogsQueryClient:
+    """Fake LogsQueryClient that records the query string and returns a fixed table.
+
+    get_active_users_24h's exclusion of anomaly rows happens in the KQL query itself
+    (a server-side `where` clause), not in Python post-processing, so this test
+    environment (no live Log Analytics workspace) cannot exercise the actual filtering
+    behavior. Instead, following the pattern used in test_kql_queries.py and
+    test_audit_log_api.py's test_build_audit_search_query_includes_all_valid_filters,
+    we assert the query string itself contains the required filter clause.
+    """
+
+    def __init__(self, table):
+        self._table = table
+        self.last_query = None
+
+    def query_workspace(self, workspace_id, query, timespan=None):
+        self.last_query = query
+        return _FakeResponse(self._table)
+
+
+def test_get_active_users_24h_query_excludes_anomaly_rows():
+    # Table as if the server-side filter were absent: mixes a normal usage row with a
+    # synthetic anomaly row. If the query lacked the exclusion clause, a live workspace
+    # would have already summed the anomaly row's tokens into TotalTokens; here we can
+    # only assert the query text carries the clause that prevents that on a real backend.
+    table = _FakeTable(
+        columns=["user_id_s", "TotalTokens"],
+        rows=[["hashed-user-1", 1000]],
+    )
+    fake_client = _FakeLogsQueryClient(table)
+
+    result = anomaly_function.get_active_users_24h(fake_client, "fake-workspace-id")
+
+    assert 'action_taken_s != "anomaly"' in fake_client.last_query
+    assert result == {"hashed-user-1": 1000}
 
 
 def test_is_anomalous_flags_usage_over_3x_baseline():

@@ -28,6 +28,7 @@ def get_active_users_24h(logs_client: LogsQueryClient, workspace_id: str) -> dic
     query = "\n".join([
         "PromptAuditLog_CL",
         "| where TimeGenerated > ago(24h)",
+        '| where action_taken_s != "anomaly"',
         "| summarize TotalTokens = sum(prompt_tokens_d + completion_tokens_d) by user_id_s",
     ])
     response = logs_client.query_workspace(workspace_id, query, timespan=None)
@@ -53,11 +54,18 @@ def load_baselines() -> dict:
 
 
 def save_baselines(baselines: dict) -> None:
+    """Overwrite the baseline blob with the full snapshot.
+
+    Assumes at-most-one concurrent invocation (true today, since this is driven by a
+    single timer trigger). If this function is ever deployed with multiple concurrent
+    instances, this read-modify-write needs an ETag-conditional upload to avoid a
+    lost-update race between overlapping runs.
+    """
     blob = _baseline_blob_client()
     blob.upload_blob(json.dumps(baselines), overwrite=True)
 
 
-def update_rolling_baseline(previous_baseline: float, today_total: int, decay: float = 1 / 7) -> float:
+def update_rolling_baseline(previous_baseline: float, today_total: int, decay: float = 1 / (7 * 24)) -> float:
     if previous_baseline == 0:
         return float(today_total)
     return (previous_baseline * (1 - decay)) + (today_total * decay)
@@ -68,6 +76,10 @@ def is_anomalous(today_total: int, baseline: float) -> bool:
 
 
 def build_anomaly_event(user_id: str, today_total: int, baseline: float) -> AuditEvent:
+    # Invariant: synthetic audit rows (like this anomaly event) must never contribute to
+    # any usage or cost aggregate. That's why prompt_tokens/completion_tokens are zeroed
+    # below (the triggering token count is preserved in block_reason instead), and why
+    # every summary query over PromptAuditLog_CL excludes action_taken_s == "anomaly".
     return AuditEvent(
         event_id=str(uuid.uuid4()),
         session_id=str(uuid.uuid4()),
@@ -88,7 +100,7 @@ def build_anomaly_event(user_id: str, today_total: int, baseline: float) -> Audi
             f"24h token usage {today_total} exceeded "
             f"{ANOMALY_MULTIPLIER}x baseline {baseline:.1f}"
         ),
-        prompt_tokens=today_total,
+        prompt_tokens=0,
         completion_tokens=0,
         cost_usd=0.0,
         model="n/a",

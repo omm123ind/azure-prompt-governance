@@ -7,8 +7,12 @@ KQL_DIR = Path(__file__).resolve().parents[2] / "infrastructure" / "kql-queries"
 
 EXPECTED_QUERIES = {
     "flag-summary.kql": ["PromptAuditLog_CL", "action_taken_s", "ago("],
-    "user-spend.kql": ["PromptAuditLog_CL", "cost_usd_d", "user_id_s", "ago("],
-    "team-spend.kql": ["PromptAuditLog_CL", "cost_usd_d", "team_id_s", "ago("],
+    "user-spend.kql": [
+        "PromptAuditLog_CL", "cost_usd_d", "user_id_s", "ago(", 'action_taken_s != "anomaly"',
+    ],
+    "team-spend.kql": [
+        "PromptAuditLog_CL", "cost_usd_d", "team_id_s", "ago(", 'action_taken_s != "anomaly"',
+    ],
     "jailbreak-heatmap.kql": ["PromptAuditLog_CL", "jailbreak_score_d", "hourofday", "ago("],
     "pii-events.kql": ["PromptAuditLog_CL", "pii_detected_b", "ago("],
     "harm-by-category.kql": [

@@ -1,6 +1,7 @@
 let lookback = 7d;
 PromptAuditLog_CL
 | where TimeGenerated > ago(lookback)
+| where action_taken_s != "anomaly"
 | summarize
     TotalCostUsd = sum(cost_usd_d),
     TotalPromptTokens = sum(prompt_tokens_d),

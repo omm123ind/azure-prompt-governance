@@ -20,6 +20,7 @@ def build_user_spend_query(lookback_days: int = 7, top_n: int = 20) -> str:
         f"let lookback = {lookback_days}d;",
         "PromptAuditLog_CL",
         "| where TimeGenerated > ago(lookback)",
+        '| where action_taken_s != "anomaly"',
         "| summarize "
         "TotalCostUsd = sum(cost_usd_d), "
         "TotalPromptTokens = sum(prompt_tokens_d), "
@@ -34,6 +35,7 @@ def build_team_spend_query(lookback_days: int = 7) -> str:
         f"let lookback = {lookback_days}d;",
         "PromptAuditLog_CL",
         "| where TimeGenerated > ago(lookback)",
+        '| where action_taken_s != "anomaly"',
         "| summarize TotalCostUsd = sum(cost_usd_d) by team_id_s",
         "| order by TotalCostUsd desc",
     ])
