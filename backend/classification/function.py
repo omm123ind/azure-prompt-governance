@@ -8,6 +8,7 @@ import azure.functions as func
 from classification.content_safety import analyze_content_safety
 from classification.jailbreak_detector import detect_jailbreak
 from classification.pii_detector import detect_pii
+from policy_engine.engine import evaluate
 
 
 def classify(prompt_text: str) -> dict:
@@ -75,8 +76,22 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
     logging.info("classification invoked, prompt length=%d", len(prompt_text))
     result = classify(prompt_text)
+
+    policy_input = {
+        "pii_confidence": result["classification"]["pii_confidence"],
+        "jailbreak_score": result["classification"]["jailbreak_score"],
+        "max_harm_score": result["max_harm_score"],
+    }
+    decision = evaluate(policy_input)
+
+    response_body = {
+        "action": decision["action"],
+        "triggered_rule": decision["triggered_rule"],
+        "notify": decision["notify"],
+        "classification": result["classification"],
+    }
     return func.HttpResponse(
-        json.dumps(result),
+        json.dumps(response_body),
         status_code=200,
         mimetype="application/json",
     )
