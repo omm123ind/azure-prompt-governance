@@ -46,15 +46,22 @@ def run_query(logs_client: LogsQueryClient, workspace_id: str, query: str) -> li
 
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
-    scope = req.params.get("scope", "user")
-    if scope not in ("user", "team"):
+    try:
+        scope = req.params.get("scope", "user")
+        if scope not in ("user", "team"):
+            raise ValueError("scope must be 'user' or 'team'")
+
+        lookback_days_str = req.params.get("lookback_days", "7")
+        lookback_days = int(lookback_days_str)
+        if lookback_days <= 0:
+            raise ValueError("lookback_days must be a positive integer")
+    except ValueError as exc:
         return func.HttpResponse(
-            json.dumps({"error": "scope must be 'user' or 'team'"}),
+            json.dumps({"error": str(exc)}),
             status_code=400,
             mimetype="application/json",
         )
 
-    lookback_days = int(req.params.get("lookback_days", "7"))
     workspace_id = os.environ["AZURE_LOG_ANALYTICS_WORKSPACE_ID"]
 
     query = (

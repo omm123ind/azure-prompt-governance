@@ -65,3 +65,11 @@ def test_main_returns_team_scope_rows(monkeypatch):
     body = json.loads(response.get_body())
     assert body["scope"] == "team"
     assert body["results"][0]["team_id_s"] == "hashed-team-1"
+
+
+def test_main_returns_400_for_invalid_lookback_days():
+    req = FakeHttpRequest({"lookback_days": "abc"})
+    response = main(req)
+    assert response.status_code == 400
+    body = json.loads(response.get_body())
+    assert "error" in body
