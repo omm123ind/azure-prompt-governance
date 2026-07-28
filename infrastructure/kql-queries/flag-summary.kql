@@ -1,0 +1,5 @@
+let lookback = 24h;
+PromptAuditLog_CL
+| where TimeGenerated > ago(lookback)
+| summarize EventCount = count() by action_taken_s
+| order by EventCount desc

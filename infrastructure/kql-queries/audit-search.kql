@@ -1,0 +1,9 @@
+let startTime = datetime(2026-07-01T00:00:00Z);
+let endTime = datetime(2026-07-02T00:00:00Z);
+PromptAuditLog_CL
+| where TimeGenerated between (startTime .. endTime)
+| where user_id_s == "REPLACE_WITH_HASHED_USER_ID"
+| where team_id_s == "REPLACE_WITH_HASHED_TEAM_ID"
+| where action_taken_s == "REPLACE_WITH_ACTION"
+| order by TimeGenerated desc
+| take 50

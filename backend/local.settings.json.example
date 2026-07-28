@@ -10,6 +10,11 @@
     "AZURE_EVENT_HUB_CONNECTION_STRING": "Endpoint=sb://...",
     "AZURE_EVENT_HUB_NAME": "eh-audit-events",
     "AZURE_CONTENT_SAFETY_ENDPOINT": "https://hubpromptgov2141147490.cognitiveservices.azure.com/",
-    "AZURE_CONTENT_SAFETY_KEY": "..."
+    "AZURE_CONTENT_SAFETY_KEY": "...",
+    "AZURE_LOG_ANALYTICS_WORKSPACE_ID": "your-workspace-guid",
+    "ANOMALY_BASELINE_CONTAINER": "governance-policies",
+    "ANOMALY_BASELINE_BLOB": "usage-baselines.json",
+    "AZURE_MONITOR_RESOURCE_ID": "/subscriptions/.../resourceGroups/rg-prompt-governance-dev/providers/Microsoft.Insights/components/prompt-governance-resource-appinsights",
+    "AZURE_MONITOR_REGION": "eastus"
   }
 }
