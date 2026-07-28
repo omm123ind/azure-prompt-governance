@@ -8,6 +8,8 @@
     "POLICY_BLOB_CONTAINER": "governance-policies",
     "POLICY_BLOB_NAME": "rules.json",
     "AZURE_EVENT_HUB_CONNECTION_STRING": "Endpoint=sb://...",
-    "AZURE_EVENT_HUB_NAME": "eh-audit-events"
+    "AZURE_EVENT_HUB_NAME": "eh-audit-events",
+    "AZURE_CONTENT_SAFETY_ENDPOINT": "https://hubpromptgov2141147490.cognitiveservices.azure.com/",
+    "AZURE_CONTENT_SAFETY_KEY": "..."
   }
 }
