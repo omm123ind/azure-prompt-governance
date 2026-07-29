@@ -17,6 +17,8 @@
     "AZURE_MONITOR_RESOURCE_ID": "/subscriptions/.../resourceGroups/rg-prompt-governance-dev/providers/Microsoft.Insights/components/prompt-governance-resource-appinsights",
     "AZURE_MONITOR_REGION": "eastus",
     "AZURE_AD_TENANT_ID": "your-tenant-guid",
-    "AZURE_AD_CLIENT_ID": "your-client-app-registration-guid"
+    "AZURE_AD_CLIENT_ID": "your-client-app-registration-guid",
+    "AZURE_EVENT_GRID_TOPIC_ENDPOINT": "https://your-topic.eastus-1.eventgrid.azure.net/api/events",
+    "AZURE_EVENT_GRID_TOPIC_KEY": "your-topic-key"
   }
 }
