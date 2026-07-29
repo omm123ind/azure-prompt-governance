@@ -48,7 +48,7 @@ export function LiveFeed() {
 
   return (
     <Stack spacing={2}>
-      <Typography variant="h4" fontWeight={700}>
+      <Typography variant="h4" sx={{ fontWeight: 700 }}>
         Live Feed
       </Typography>
       {events.map((event) => {

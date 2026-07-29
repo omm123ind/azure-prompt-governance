@@ -18,11 +18,16 @@ function defaultFilters(): AuditLogFilters {
   return { startTime: start.toISOString(), endTime: end.toISOString() };
 }
 
+function csvEscape(value: unknown): string {
+  const str = String(value ?? "");
+  return `"${str.replace(/"/g, '""')}"`;
+}
+
 function toCsv(rows: AuditLogResponse["results"]): string {
   if (rows.length === 0) return "";
   const headers = Object.keys(rows[0]);
-  const lines = rows.map((row) => headers.map((h) => JSON.stringify(row[h] ?? "")).join(","));
-  return [headers.join(","), ...lines].join("\n");
+  const lines = rows.map((row) => headers.map((h) => csvEscape(row[h])).join(","));
+  return [headers.map(csvEscape).join(","), ...lines].join("\n");
 }
 
 export function AuditExplorer() {
@@ -52,7 +57,7 @@ export function AuditExplorer() {
 
   return (
     <Stack spacing={2}>
-      <Typography variant="h4" fontWeight={700}>
+      <Typography variant="h4" sx={{ fontWeight: 700 }}>
         Audit Explorer
       </Typography>
       <Stack direction="row" spacing={2}>
