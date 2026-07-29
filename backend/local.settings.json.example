@@ -16,6 +16,7 @@
     "ANOMALY_BASELINE_BLOB": "usage-baselines.json",
     "AZURE_MONITOR_RESOURCE_ID": "/subscriptions/.../resourceGroups/rg-prompt-governance-dev/providers/Microsoft.Insights/components/prompt-governance-resource-appinsights",
     "AZURE_MONITOR_REGION": "eastus",
+    "_comment_aad": "The AAD app registration's manifest MUST have \"accessTokenAcceptedVersion\": 2, or real tokens will have a v1 aud/iss shape that fails the v2.0 issuer/audience check below and every request will 401. AZURE_AD_CLIENT_ID/AZURE_AD_TENANT_ID must be the SAME app registration as VITE_AAD_CLIENT_ID/VITE_AAD_TENANT_ID in dashboard/.env.example, or require_role's audience check will reject every real token from the dashboard.",
     "AZURE_AD_TENANT_ID": "your-tenant-guid",
     "AZURE_AD_CLIENT_ID": "your-client-app-registration-guid",
     "AZURE_EVENT_GRID_TOPIC_ENDPOINT": "https://your-topic.eastus-1.eventgrid.azure.net/api/events",

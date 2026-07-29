@@ -8,6 +8,8 @@ import azure.functions as func
 from azure.eventhub import EventData, EventHubProducerClient
 
 from shared.models import AuditEvent
+from alerting.teams_card import should_alert
+from alerting.event_grid_publisher import publish_event as publish_alert_event
 
 EVENT_HUB_NAME = "eh-audit-events"
 
@@ -100,6 +102,14 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     )
     logging.info("audit event built: %s", event.event_id)
     publish_to_event_hub(event)
+
+    try:
+        event_dict = event.model_dump()
+        if should_alert(event_dict):
+            publish_alert_event(event_dict)
+    except Exception:
+        logging.warning("alert publish failed for event %s", event.event_id, exc_info=True)
+
     return func.HttpResponse(
         json.dumps({"received": True, "event_id": event.event_id}),
         status_code=200,

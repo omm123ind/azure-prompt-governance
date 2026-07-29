@@ -60,7 +60,13 @@ def require_role(
         logging.warning("token validation failed: %s", exc)
         return False, _unauthorized("invalid or expired token")
 
+    scopes = str(claims.get("scp", "")).split()
     roles = claims.get("roles", [])
+    if "access_as_user" not in scopes and not roles:
+        return False, _unauthorized(
+            "token is not a valid access token (missing scp/roles)"
+        )
+
     required_roles = {role} if isinstance(role, str) else role
     if not required_roles & set(roles):
         return False, _forbidden(f"requires one of roles: {sorted(required_roles)}")

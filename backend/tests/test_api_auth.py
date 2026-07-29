@@ -78,6 +78,22 @@ def test_require_role_with_role_set_rejects_when_no_role_matches():
     assert response.status_code == 403
 
 
+def test_require_role_allows_app_only_token_with_roles_but_no_scp():
+    token = jwt.encode({"roles": ["compliance-admin"]}, "test-secret", algorithm="HS256")
+    req = FakeHttpRequest({"Authorization": f"Bearer {token}"})
+    allowed, response = require_role(req, "compliance-admin", _decode_unverified=True)
+    assert allowed is True
+    assert response is None
+
+
+def test_require_role_rejects_token_with_neither_scp_nor_roles():
+    token = jwt.encode({"sub": "someone"}, "test-secret", algorithm="HS256")
+    req = FakeHttpRequest({"Authorization": f"Bearer {token}"})
+    allowed, response = require_role(req, "compliance-admin", _decode_unverified=True)
+    assert allowed is False
+    assert response.status_code == 401
+
+
 class _FakeSysWithoutPytest:
     modules: dict = {}
 

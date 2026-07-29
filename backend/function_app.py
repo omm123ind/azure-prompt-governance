@@ -30,12 +30,12 @@ def log_ingest_consumer(event: func.EventHubEvent):
     log_ingest_consumer_main(event)
 
 
-@app.route(route="audit_log", methods=["GET"])
+@app.route(route="audit_log", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
 def audit_log(req: func.HttpRequest) -> func.HttpResponse:
     return audit_log_main(req)
 
 
-@app.route(route="user_stats", methods=["GET"])
+@app.route(route="user_stats", methods=["GET"], auth_level=func.AuthLevel.ANONYMOUS)
 def user_stats(req: func.HttpRequest) -> func.HttpResponse:
     return user_stats_main(req)
 
@@ -45,6 +45,6 @@ def anomaly_checker(timer: func.TimerRequest) -> None:
     anomaly_checker_main(timer)
 
 
-@app.route(route="policy_config", methods=["GET", "PUT"])
+@app.route(route="policy_config", methods=["GET", "PUT"], auth_level=func.AuthLevel.ANONYMOUS)
 def policy_config(req: func.HttpRequest) -> func.HttpResponse:
     return policy_config_main(req)
