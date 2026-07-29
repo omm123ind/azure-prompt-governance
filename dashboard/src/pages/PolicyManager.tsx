@@ -15,12 +15,20 @@ import {
 
 import { getPolicyRules, savePolicyRules, type PolicyRule, type PolicyRules } from "../services/apiClient";
 
+function extractErrorMessage(err: unknown): string {
+  const maybeAxiosErr = err as { response?: { data?: { error?: string } } } | undefined;
+  return maybeAxiosErr?.response?.data?.error ?? "Something went wrong. Please try again.";
+}
+
 export function PolicyManager() {
   const [rules, setRules] = useState<PolicyRules | null>(null);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    getPolicyRules().then(setRules);
+    getPolicyRules()
+      .then(setRules)
+      .catch((err) => setError(extractErrorMessage(err)));
   }, []);
 
   function updateRule(index: number, patch: Partial<PolicyRule>) {
@@ -31,10 +39,15 @@ export function PolicyManager() {
 
   async function handleSave() {
     if (!rules) return;
-    await savePolicyRules(rules);
-    setSaved(true);
+    try {
+      await savePolicyRules(rules);
+      setSaved(true);
+    } catch (err) {
+      setError(extractErrorMessage(err));
+    }
   }
 
+  if (error && !rules) return <Typography color="error">{error}</Typography>;
   if (!rules) return <Typography>Loading…</Typography>;
 
   return (
@@ -99,6 +112,12 @@ export function PolicyManager() {
         autoHideDuration={4000}
         onClose={() => setSaved(false)}
         message="Rule changes will take effect within 60 seconds"
+      />
+      <Snackbar
+        open={error !== null}
+        autoHideDuration={6000}
+        onClose={() => setError(null)}
+        message={error}
       />
     </Stack>
   );
