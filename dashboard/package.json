@@ -11,6 +11,8 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@azure/msal-browser": "^5.17.3",
+    "@azure/msal-react": "^5.5.4",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@mui/icons-material": "^9.2.0",
