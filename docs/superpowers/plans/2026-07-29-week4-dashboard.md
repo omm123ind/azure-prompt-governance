@@ -1349,7 +1349,7 @@ export function PolicyManager() {
 
   return (
     <Stack spacing={2}>
-      <Typography variant="h4" fontWeight={700}>
+      <Typography variant="h4" sx={{ fontWeight: 700 }}>
         Policy Manager
       </Typography>
       {rules.rules.map((rule, index) => (
@@ -1362,7 +1362,7 @@ export function PolicyManager() {
               }
               label="Enabled"
             />
-            <Stack direction="row" spacing={2} alignItems="center">
+            <Stack direction="row" spacing={2} sx={{ alignItems: "center" }}>
               <Typography variant="body2">Threshold</Typography>
               <Slider
                 value={rule.threshold}
@@ -1500,7 +1500,7 @@ export function CostAnalytics() {
 
   return (
     <Stack spacing={3}>
-      <Typography variant="h4" fontWeight={700}>
+      <Typography variant="h4" sx={{ fontWeight: 700 }}>
         Cost Analytics
       </Typography>
       <Paper sx={{ p: 2, height: 350 }}>
