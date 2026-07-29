@@ -11,12 +11,14 @@ export function AuthGate({ children }: { children: ReactNode }) {
   if (!isAuthenticated) {
     return (
       <Box
-        display="flex"
-        flexDirection="column"
-        alignItems="center"
-        justifyContent="center"
-        minHeight="100vh"
-        gap={2}
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: "100vh",
+          gap: 2,
+        }}
       >
         <Typography variant="h5">Prompt Governance Platform</Typography>
         <Button variant="contained" onClick={() => instance.loginRedirect(loginRequest)}>
