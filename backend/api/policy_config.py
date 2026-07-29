@@ -22,8 +22,14 @@ def get_rules_from_blob() -> dict:
 
 
 def _validate_rules(payload: dict) -> None:
+    for field in ("version", "updated_at"):
+        value = payload.get(field)
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError(f"payload must have a non-empty '{field}' string")
     if "rules" not in payload or not isinstance(payload["rules"], list):
         raise ValueError("payload must have a 'rules' list")
+    if len(payload["rules"]) == 0:
+        raise ValueError("rules list cannot be empty — this would disable all policy enforcement")
     for rule in payload["rules"]:
         missing = REQUIRED_RULE_FIELDS - set(rule.keys())
         if missing:

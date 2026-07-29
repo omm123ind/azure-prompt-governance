@@ -87,6 +87,29 @@ def test_put_rejects_malformed_rules():
     assert response.status_code == 400
 
 
+def test_put_rejects_missing_version_and_updated_at():
+    _seed_container()
+    _reset_cache_for_tests()
+    bad_rules = {
+        "rules": [
+            {
+                "id": "block_pii", "description": "d", "condition": "pii_confidence",
+                "threshold": 0.8, "action": "block", "notify": True, "enabled": True,
+            }
+        ],
+    }
+    response = main(FakeHttpRequest("PUT", body=bad_rules))
+    assert response.status_code == 400
+
+
+def test_put_rejects_empty_rules_list():
+    _seed_container()
+    _reset_cache_for_tests()
+    bad_rules = {"version": "1.0", "updated_at": "now", "rules": []}
+    response = main(FakeHttpRequest("PUT", body=bad_rules))
+    assert response.status_code == 400
+
+
 def test_unsupported_method_returns_405():
     response = main(FakeHttpRequest("DELETE"))
     assert response.status_code == 405
