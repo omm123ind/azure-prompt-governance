@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../auth/msalConfig", () => ({
   msalInstance: {
@@ -8,7 +8,6 @@ vi.mock("../auth/msalConfig", () => ({
   loginRequest: { scopes: ["api://fake/access_as_user"] },
 }));
 
-import axios from "axios";
 import { getAuditLog, getUserStats, getPolicyRules, savePolicyRules } from "./apiClient";
 
 vi.mock("axios", () => ({
