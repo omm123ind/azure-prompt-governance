@@ -7,6 +7,8 @@ import azure.functions as func
 from azure.identity import DefaultAzureCredential
 from azure.monitor.query import LogsQueryClient
 
+from api.auth import require_role
+
 ALLOWED_ACTIONS = {"block", "flag", "pass", "anomaly"}
 ALLOWED_FLAG_TYPES = {"pii", "jailbreak", "harm"}
 ID_PATTERN = re.compile(r"^[a-zA-Z0-9\-]{1,128}$")
@@ -78,6 +80,14 @@ def run_query(logs_client: LogsQueryClient, workspace_id: str, query: str) -> li
 
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
+    allowed, error_response = require_role(
+        req,
+        "audit-viewer",
+        _decode_unverified=os.environ.get("RBAC_TEST_MODE") == "true",
+    )
+    if not allowed:
+        return error_response
+
     try:
         start_time = req.params.get("start_time")
         end_time = req.params.get("end_time")

@@ -8,17 +8,22 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 os.environ.setdefault("AZURE_STORAGE_CONNECTION_STRING", "UseDevelopmentStorage=true")
 os.environ.setdefault("POLICY_BLOB_CONTAINER", "governance-policies-test-config")
 os.environ.setdefault("POLICY_BLOB_NAME", "rules.json")
+os.environ.setdefault("RBAC_TEST_MODE", "true")
 
+import jwt
 from azure.storage.blob import BlobServiceClient
 
 from api.policy_config import main
 from policy_engine.engine import _reset_cache_for_tests
 
+_FAKE_TOKEN = jwt.encode({"roles": ["compliance-admin"]}, "test-secret", algorithm="HS256")
+
 
 class FakeHttpRequest:
-    def __init__(self, method: str, body: dict | None = None):
+    def __init__(self, method: str, body: dict | None = None, headers: dict | None = None):
         self.method = method
         self._body = body
+        self.headers = headers or {"Authorization": f"Bearer {_FAKE_TOKEN}"}
 
     def get_json(self):
         if self._body is None:

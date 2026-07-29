@@ -4,6 +4,8 @@ import os
 import azure.functions as func
 from azure.storage.blob import BlobServiceClient
 
+from api.auth import require_role
+
 REQUIRED_RULE_FIELDS = {"id", "description", "condition", "threshold", "action", "notify", "enabled"}
 VALID_ACTIONS = {"block", "flag", "pass"}
 
@@ -50,6 +52,14 @@ def save_rules_to_blob(rules: dict) -> None:
 
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
+    allowed, error_response = require_role(
+        req,
+        "compliance-admin",
+        _decode_unverified=os.environ.get("RBAC_TEST_MODE") == "true",
+    )
+    if not allowed:
+        return error_response
+
     if req.method == "GET":
         rules = get_rules_from_blob()
         return func.HttpResponse(json.dumps(rules), status_code=200, mimetype="application/json")
