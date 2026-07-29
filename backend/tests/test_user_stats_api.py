@@ -39,6 +39,14 @@ def test_main_rejects_invalid_scope():
     assert response.status_code == 400
 
 
+def test_main_returns_401_when_no_authorization_header():
+    # NOTE: FakeHttpRequest defaults headers to the fake authorized token when
+    # falsy (None or {}), so we pass a non-empty dict without Authorization.
+    req = FakeHttpRequest({"scope": "user"}, headers={"X-No-Auth": "true"})
+    response = main(req)
+    assert response.status_code == 401
+
+
 def test_main_returns_user_scope_rows(monkeypatch):
     import api.user_stats as user_stats_module
 

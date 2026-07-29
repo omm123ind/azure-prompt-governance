@@ -82,7 +82,7 @@ def run_query(logs_client: LogsQueryClient, workspace_id: str, query: str) -> li
 def main(req: func.HttpRequest) -> func.HttpResponse:
     allowed, error_response = require_role(
         req,
-        "audit-viewer",
+        {"audit-viewer", "compliance-admin"},
         _decode_unverified=os.environ.get("RBAC_TEST_MODE") == "true",
     )
     if not allowed:

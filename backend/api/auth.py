@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import sys
 from functools import lru_cache
 
 import azure.functions as func
@@ -30,7 +31,7 @@ def _forbidden(message: str) -> func.HttpResponse:
 
 
 def require_role(
-    req: func.HttpRequest, role: str, _decode_unverified: bool = False
+    req: func.HttpRequest, role: str | set[str], _decode_unverified: bool = False
 ) -> tuple[bool, func.HttpResponse | None]:
     auth_header = req.headers.get("Authorization", "")
     if not auth_header.startswith("Bearer "):
@@ -40,22 +41,28 @@ def require_role(
 
     try:
         if _decode_unverified:
+            if "pytest" not in sys.modules:
+                raise RuntimeError("RBAC test mode cannot be used outside pytest")
             claims = jwt.decode(token, "test-secret", algorithms=["HS256"])
         else:
             signing_key = _jwks_client().get_signing_key_from_jwt(token)
             client_id = os.environ["AZURE_AD_CLIENT_ID"]
+            tenant_id = os.environ["AZURE_AD_TENANT_ID"]
             claims = jwt.decode(
                 token,
                 signing_key.key,
                 algorithms=["RS256"],
                 audience=client_id,
+                issuer=f"https://login.microsoftonline.com/{tenant_id}/v2.0",
+                options={"require": ["exp", "aud", "iss"]},
             )
     except jwt.PyJWTError as exc:
         logging.warning("token validation failed: %s", exc)
         return False, _unauthorized("invalid or expired token")
 
     roles = claims.get("roles", [])
-    if role not in roles:
-        return False, _forbidden(f"requires role '{role}'")
+    required_roles = {role} if isinstance(role, str) else role
+    if not required_roles & set(roles):
+        return False, _forbidden(f"requires one of roles: {sorted(required_roles)}")
 
     return True, None

@@ -60,6 +60,20 @@ def test_main_returns_400_when_start_time_missing():
     assert response.status_code == 400
 
 
+def test_main_returns_401_when_no_authorization_header():
+    # NOTE: FakeHttpRequest defaults headers to the fake authorized token when
+    # falsy (None or {}), so we pass a non-empty dict without Authorization.
+    req = FakeHttpRequest(
+        {
+            "start_time": "2026-07-01T00:00:00Z",
+            "end_time": "2026-07-02T00:00:00Z",
+        },
+        headers={"X-No-Auth": "true"},
+    )
+    response = main(req)
+    assert response.status_code == 401
+
+
 def test_main_returns_rows_from_run_query(monkeypatch):
     import api.audit_log as audit_log_module
 

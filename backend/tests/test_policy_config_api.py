@@ -17,6 +17,7 @@ from api.policy_config import main
 from policy_engine.engine import _reset_cache_for_tests
 
 _FAKE_TOKEN = jwt.encode({"roles": ["compliance-admin"]}, "test-secret", algorithm="HS256")
+_AUDIT_VIEWER_ONLY_TOKEN = jwt.encode({"roles": ["audit-viewer"]}, "test-secret", algorithm="HS256")
 
 
 class FakeHttpRequest:
@@ -118,3 +119,22 @@ def test_put_rejects_empty_rules_list():
 def test_unsupported_method_returns_405():
     response = main(FakeHttpRequest("DELETE"))
     assert response.status_code == 405
+
+
+def test_main_returns_401_when_no_authorization_header():
+    # NOTE: FakeHttpRequest defaults headers to the fake authorized token when
+    # falsy (None or {}), so we pass a non-empty dict without Authorization.
+    response = main(FakeHttpRequest("GET", headers={"X-No-Auth": "true"}))
+    assert response.status_code == 401
+
+
+def test_get_with_audit_viewer_only_token_returns_403():
+    _seed_container()
+    _reset_cache_for_tests()
+    response = main(
+        FakeHttpRequest(
+            "GET",
+            headers={"Authorization": f"Bearer {_AUDIT_VIEWER_ONLY_TOKEN}"},
+        )
+    )
+    assert response.status_code == 403

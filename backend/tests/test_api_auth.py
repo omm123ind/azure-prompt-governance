@@ -46,3 +46,47 @@ def test_require_role_rejects_malformed_token():
     allowed, response = require_role(req, "compliance-admin", _decode_unverified=True)
     assert allowed is False
     assert response.status_code == 401
+
+
+def test_require_role_with_role_set_allows_any_matching_role():
+    token = _fake_token(["audit-viewer"])
+    req = FakeHttpRequest({"Authorization": f"Bearer {token}"})
+    allowed, response = require_role(
+        req, {"audit-viewer", "compliance-admin"}, _decode_unverified=True
+    )
+    assert allowed is True
+    assert response is None
+
+
+def test_require_role_with_role_set_allows_other_matching_role():
+    token = _fake_token(["compliance-admin"])
+    req = FakeHttpRequest({"Authorization": f"Bearer {token}"})
+    allowed, response = require_role(
+        req, {"audit-viewer", "compliance-admin"}, _decode_unverified=True
+    )
+    assert allowed is True
+    assert response is None
+
+
+def test_require_role_with_role_set_rejects_when_no_role_matches():
+    token = _fake_token(["some-other-role"])
+    req = FakeHttpRequest({"Authorization": f"Bearer {token}"})
+    allowed, response = require_role(
+        req, {"audit-viewer", "compliance-admin"}, _decode_unverified=True
+    )
+    assert allowed is False
+    assert response.status_code == 403
+
+
+class _FakeSysWithoutPytest:
+    modules: dict = {}
+
+
+def test_require_role_test_mode_raises_outside_pytest(monkeypatch):
+    import api.auth as auth_module
+
+    token = _fake_token(["compliance-admin"])
+    req = FakeHttpRequest({"Authorization": f"Bearer {token}"})
+    monkeypatch.setattr(auth_module, "sys", _FakeSysWithoutPytest)
+    with pytest.raises(RuntimeError):
+        require_role(req, "compliance-admin", _decode_unverified=True)
