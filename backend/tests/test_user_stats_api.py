@@ -1,15 +1,23 @@
 import json
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+os.environ.setdefault("RBAC_TEST_MODE", "true")
+
+import jwt
+
 from api.user_stats import build_team_spend_query, build_user_spend_query, main
+
+_FAKE_TOKEN = jwt.encode({"roles": ["audit-viewer"]}, "test-secret", algorithm="HS256")
 
 
 class FakeHttpRequest:
-    def __init__(self, params: dict):
+    def __init__(self, params: dict, headers: dict | None = None):
         self.params = params
+        self.headers = headers or {"Authorization": f"Bearer {_FAKE_TOKEN}"}
 
 
 def test_build_user_spend_query_has_top_n_and_lookback():
@@ -29,6 +37,14 @@ def test_main_rejects_invalid_scope():
     req = FakeHttpRequest({"scope": "not-a-real-scope"})
     response = main(req)
     assert response.status_code == 400
+
+
+def test_main_returns_401_when_no_authorization_header():
+    # NOTE: FakeHttpRequest defaults headers to the fake authorized token when
+    # falsy (None or {}), so we pass a non-empty dict without Authorization.
+    req = FakeHttpRequest({"scope": "user"}, headers={"X-No-Auth": "true"})
+    response = main(req)
+    assert response.status_code == 401
 
 
 def test_main_returns_user_scope_rows(monkeypatch):

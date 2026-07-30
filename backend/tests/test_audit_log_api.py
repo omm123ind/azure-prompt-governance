@@ -1,17 +1,24 @@
 import json
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+os.environ.setdefault("RBAC_TEST_MODE", "true")
+
+import jwt
 import pytest
 
 from api.audit_log import build_audit_search_query, main
 
+_FAKE_TOKEN = jwt.encode({"roles": ["audit-viewer"]}, "test-secret", algorithm="HS256")
+
 
 class FakeHttpRequest:
-    def __init__(self, params: dict):
+    def __init__(self, params: dict, headers: dict | None = None):
         self.params = params
+        self.headers = headers or {"Authorization": f"Bearer {_FAKE_TOKEN}"}
 
 
 def test_build_audit_search_query_rejects_injection_in_user_id():
@@ -51,6 +58,20 @@ def test_main_returns_400_when_start_time_missing():
     req = FakeHttpRequest({"end_time": "2026-07-02T00:00:00Z"})
     response = main(req)
     assert response.status_code == 400
+
+
+def test_main_returns_401_when_no_authorization_header():
+    # NOTE: FakeHttpRequest defaults headers to the fake authorized token when
+    # falsy (None or {}), so we pass a non-empty dict without Authorization.
+    req = FakeHttpRequest(
+        {
+            "start_time": "2026-07-01T00:00:00Z",
+            "end_time": "2026-07-02T00:00:00Z",
+        },
+        headers={"X-No-Auth": "true"},
+    )
+    response = main(req)
+    assert response.status_code == 401
 
 
 def test_main_returns_rows_from_run_query(monkeypatch):
