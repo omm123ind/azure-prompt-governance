@@ -20,26 +20,28 @@ Policy Engine (Blob-backed rules, 60s TTL cache)
                             ▼
                     Log Writer Function
                             │  publish (hash-only AuditEvent)
-                            ▼
-                    Azure Event Hub
-                            │
-                            ▼
-              Log Ingest Consumer Function
-                            │  Logs Ingestion API
-                            ▼
-            Azure Log Analytics (PromptAuditLog_CL)
-                            │
-              ┌─────────────┼─────────────┐
-              ▼             ▼             ▼
-      Anomaly Checker   REST API      KQL Query
-      (hourly timer)   (audit_log,    Library
-              │        user_stats,   (8 queries)
-              │        policy_config)      │
-              ▼             │              ▼
-      Event Grid ◄──────────┘      React Dashboard
-              │                     (MSAL/AAD auth,
-              ▼                      4 views)
-      Teams Webhook
+                            ├───────────────────────┐
+                            ▼                       ▼
+                    Azure Event Hub          Event Grid (should_alert)
+                            │                       │
+                            ▼                       │
+              Log Ingest Consumer Function          │
+                            │  Logs Ingestion API    │
+                            ▼                       │
+            Azure Log Analytics (PromptAuditLog_CL)  │
+                            │                       │
+              ┌─────────────┼─────────────┐          │
+              ▼             ▼             ▼          │
+      Anomaly Checker   REST API      KQL Query       │
+      (hourly timer)   (audit_log,    Library         │
+              │        user_stats,   (8 queries)      │
+              │        policy_config)                 │
+              ▼             │                         │
+      Event Grid ◄──────────┼─────────────────────────┘
+              │             ▼
+              ▼      React Dashboard
+      Teams Webhook   (MSAL/AAD auth,
+                        4 views)
 ```
 
 ## Azure services
@@ -87,3 +89,15 @@ Policy Engine (Blob-backed rules, 60s TTL cache)
 - Power BI Embedded (spec's preferred Cost Analytics visualization) was
   not built — the spec's own recharts fallback was used instead (see
   the Week 4 plan's self-review for the reasoning).
+- `RBAC_TEST_MODE` (checked in `backend/api/audit_log.py`,
+  `user_stats.py`, and `policy_config.py`, and enforced in
+  `backend/api/auth.py`) disables real AAD signature validation and
+  accepts an unverified HS256 test token instead — it exists only so
+  the API test suite can run without a live AAD tenant. This must never
+  be set in a production environment; it is a pre-production hardening
+  item to lock down before any real deployment.
+- The 10 canonical integration test prompts (`test_canonical_prompts.py`)
+  are written and gated behind `OPENAI_API_KEY`, but have never actually
+  been run against the live OpenAI classifiers — locally and in CI they
+  currently skip cleanly. Their expected pass/flag/block outcomes are
+  therefore unvalidated against the real model.
