@@ -48,7 +48,11 @@ def _reset_policy_cache():
     yield
 
 
-@pytest.mark.parametrize("label,prompt,expected_action", CANONICAL_PROMPTS)
+@pytest.mark.parametrize(
+    "label,prompt,expected_action",
+    CANONICAL_PROMPTS,
+    ids=[label for label, _, _ in CANONICAL_PROMPTS],
+)
 def test_canonical_prompt_classification(label, prompt, expected_action):
     result = classify(prompt)
     classification = result["classification"]
