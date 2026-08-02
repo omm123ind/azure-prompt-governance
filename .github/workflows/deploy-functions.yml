@@ -15,6 +15,13 @@ env:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    services:
+      azurite:
+        image: mcr.microsoft.com/azure-storage/azurite
+        ports:
+          - 10000:10000
+          - 10001:10001
+          - 10002:10002
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -31,6 +38,8 @@ jobs:
           pip install -r requirements.txt --target=".python_packages/lib/site-packages"
 
       - name: Run non-integration tests before deploying
+        env:
+          AZURE_STORAGE_CONNECTION_STRING: UseDevelopmentStorage=true
         run: |
           cd ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
           pip install -r requirements.txt

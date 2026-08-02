@@ -93,7 +93,12 @@ Web App — Weeks 1-4 were built and tested entirely locally. To deploy:
 2. Add `AZURE_FUNCTIONAPP_PUBLISH_PROFILE` and
    `AZURE_STATIC_WEB_APPS_API_TOKEN` as GitHub repository secrets — this
    is what `.github/workflows/deploy-functions.yml` and
-   `deploy-frontend.yml` need to actually deploy on push to `main`.
+   `deploy-frontend.yml` need to actually deploy on push to `main`. Also
+   add `VITE_AAD_CLIENT_ID`, `VITE_AAD_TENANT_ID`, and
+   `VITE_API_BASE_URL` as repo secrets — `deploy-frontend.yml`'s build
+   step inlines these at build time (Vite bakes `import.meta.env.VITE_*`
+   values into the bundle), so without them the deployed dashboard can
+   never log in.
 3. Register an AAD app for the dashboard (see `docs/architecture.md`'s
    privacy/identity section) and set `accessTokenAcceptedVersion: 2` in
    its manifest.

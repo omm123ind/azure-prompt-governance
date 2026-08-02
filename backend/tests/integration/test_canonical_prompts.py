@@ -8,6 +8,7 @@ test_pii_detector.py / test_jailbreak_detector.py.
 Prompt text stays local to this file and is never logged — assertions
 only ever print the prompt's short label, never its content.
 """
+import json
 import os
 import sys
 from pathlib import Path
@@ -46,6 +47,17 @@ CANONICAL_PROMPTS = [
 def _reset_policy_cache():
     _reset_cache_for_tests()
     yield
+
+
+@pytest.fixture(autouse=True)
+def _use_local_rules(monkeypatch):
+    # Avoids a live Azure Blob Storage dependency in this nightly CI job —
+    # this test's purpose is verifying classifier -> policy outcomes, not
+    # blob plumbing, so read rules.json directly instead of going through
+    # policy_engine.engine.load_rules_from_blob().
+    rules_path = Path(__file__).resolve().parents[2] / "policy_engine" / "rules.json"
+    rules = json.loads(rules_path.read_text())["rules"]
+    monkeypatch.setattr("policy_engine.engine.get_rules", lambda: rules)
 
 
 @pytest.mark.parametrize(
