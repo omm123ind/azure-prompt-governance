@@ -18,6 +18,7 @@ Prerequisites:
     4. Then run: python tests/load/load_test_classification.py
 """
 import json
+import math
 import statistics
 import sys
 import time
@@ -65,8 +66,8 @@ def run_load_test(url: str, prompt: str, concurrency: int = DEFAULT_CONCURRENCY)
     latencies.sort()
     return {
         "p50_ms": statistics.median(latencies),
-        "p95_ms": latencies[int(len(latencies) * 0.95) - 1],
-        "p99_ms": latencies[int(len(latencies) * 0.99) - 1],
+        "p95_ms": latencies[min(math.ceil(0.95 * len(latencies)) - 1, len(latencies) - 1)],
+        "p99_ms": latencies[min(math.ceil(0.99 * len(latencies)) - 1, len(latencies) - 1)],
         "success_count": success_count,
         "error_count": error_count,
     }

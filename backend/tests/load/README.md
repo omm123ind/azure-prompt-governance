@@ -18,7 +18,7 @@ roughly 10-20ms and is not re-measured here.
    test makes real API calls, it is not mockable since it measures real
    classifier latency.
 3. In a separate terminal: `cd backend && func start`
-4. Run: `cd backend && ../backend/.venv311/Scripts/python.exe tests/load/load_test_classification.py`
+4. Run: `cd backend && .venv311/Scripts/python.exe tests/load/load_test_classification.py`
 
 Exits 0 if p95 is within the 200ms threshold (spec Section 13.1), exits 1
 with guidance toward the async fallback pattern if not.
