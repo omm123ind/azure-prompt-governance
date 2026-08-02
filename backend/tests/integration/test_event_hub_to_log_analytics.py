@@ -5,11 +5,18 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
+import pytest
+
 from azure.monitor.query import LogsQueryClient
 from azure.identity import AzureCliCredential
 
 from log_writer.function import build_audit_event
 from log_ingest_consumer.function import push_to_log_analytics
+
+pytestmark = pytest.mark.skipif(
+    not os.environ.get("AZURE_DCE_LOGS_INGESTION_ENDPOINT"),
+    reason="AZURE_DCE_LOGS_INGESTION_ENDPOINT not set — skipping live ingestion test",
+)
 
 
 def test_pushed_event_appears_in_log_analytics():

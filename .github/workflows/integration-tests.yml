@@ -1,0 +1,32 @@
+name: Nightly Integration Tests
+
+on:
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  canonical-prompts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt
+
+      - name: Run canonical integration tests
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          AZURE_CONTENT_SAFETY_ENDPOINT: ${{ secrets.AZURE_CONTENT_SAFETY_ENDPOINT }}
+          AZURE_CONTENT_SAFETY_KEY: ${{ secrets.AZURE_CONTENT_SAFETY_KEY }}
+        run: |
+          cd backend
+          python -m pytest tests/integration/test_canonical_prompts.py -v
