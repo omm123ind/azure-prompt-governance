@@ -45,14 +45,13 @@ jobs:
         run: |
           cd ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
           python -m pip install --upgrade pip
-          pip install -r requirements.txt --target=".python_packages/lib/site-packages"
+          pip install -r requirements.txt
 
       - name: Run non-integration tests before deploying
         env:
           AZURE_STORAGE_CONNECTION_STRING: UseDevelopmentStorage=true
         run: |
           cd ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
-          pip install -r requirements.txt
           python -m pytest tests/ --ignore=tests/integration --ignore=tests/load -q
 
       - name: Deploy to Azure Functions
