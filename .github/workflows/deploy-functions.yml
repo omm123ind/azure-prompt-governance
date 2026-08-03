@@ -16,16 +16,25 @@ env:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    services:
-      azurite:
-        image: mcr.microsoft.com/azure-storage/azurite
-        ports:
-          - 10000:10000
-          - 10001:10001
-          - 10002:10002
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Set up Node.js (for Azurite)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Start Azurite
+        run: |
+          npx --yes azurite --silent --skipApiVersionCheck --blobHost 127.0.0.1 --queueHost 127.0.0.1 --tableHost 127.0.0.1 --location /tmp/azurite-data &
+          for i in $(seq 1 15); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:10000/devstoreaccount1 || echo "000")
+            if [ "$code" != "000" ]; then echo "Azurite up ($code)"; exit 0; fi
+            sleep 1
+          done
+          echo "Azurite did not come up in time" >&2
+          exit 1
 
       - name: Set up Python ${{ env.PYTHON_VERSION }}
         uses: actions/setup-python@v5
