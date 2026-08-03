@@ -6,6 +6,7 @@ on:
     paths:
       - "backend/**"
       - ".github/workflows/deploy-functions.yml"
+  workflow_dispatch: {}
 
 env:
   AZURE_FUNCTIONAPP_NAME: "prompt-governance-functions"
