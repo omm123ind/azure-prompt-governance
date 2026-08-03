@@ -1,6 +1,7 @@
 import json
 import os
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -93,3 +94,29 @@ def test_main_returns_rows_from_run_query(monkeypatch):
     body = json.loads(response.get_body())
     assert body["count"] == 1
     assert body["results"][0]["event_id_s"] == "abc123"
+
+
+def test_main_serializes_datetime_columns_from_log_analytics(monkeypatch):
+    # Log Analytics rows include a native datetime TimeGenerated column;
+    # json.dumps() raises TypeError on unconverted datetime objects, which
+    # surfaced in production as an unhandled 500 despite a healthy query.
+    import api.audit_log as audit_log_module
+
+    monkeypatch.setenv("AZURE_LOG_ANALYTICS_WORKSPACE_ID", "fake-workspace-id")
+    monkeypatch.setattr(audit_log_module, "get_logs_client", lambda: "fake-client")
+    monkeypatch.setattr(
+        audit_log_module,
+        "run_query",
+        lambda client, workspace_id, query: [
+            {"event_id_s": "abc123", "TimeGenerated": datetime(2026, 8, 3, 21, 45, 31, tzinfo=timezone.utc)}
+        ],
+    )
+
+    req = FakeHttpRequest({
+        "start_time": "2026-07-01T00:00:00Z",
+        "end_time": "2026-07-02T00:00:00Z",
+    })
+    response = main(req)
+    assert response.status_code == 200
+    body = json.loads(response.get_body())
+    assert body["results"][0]["TimeGenerated"] == "2026-08-03T21:45:31+00:00"

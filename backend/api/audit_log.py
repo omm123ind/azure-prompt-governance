@@ -1,7 +1,7 @@
 import json
 import os
 import re
-from datetime import datetime
+from datetime import date, datetime
 
 import azure.functions as func
 from azure.identity import DefaultAzureCredential
@@ -73,10 +73,25 @@ def build_audit_search_query(
     return "\n".join(clauses)
 
 
+def _json_safe(value):
+    if isinstance(value, (datetime, date)):
+        return value.isoformat()
+    return value
+
+
+def _json_default(value):
+    if isinstance(value, (datetime, date)):
+        return value.isoformat()
+    raise TypeError(f"Object of type {type(value).__name__} is not JSON serializable")
+
+
 def run_query(logs_client: LogsQueryClient, workspace_id: str, query: str) -> list:
     response = logs_client.query_workspace(workspace_id, query, timespan=None)
     table = response.tables[0]
-    return [dict(zip(table.columns, row)) for row in table.rows]
+    return [
+        {col: _json_safe(val) for col, val in zip(table.columns, row)}
+        for row in table.rows
+    ]
 
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
@@ -112,7 +127,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     workspace_id = os.environ["AZURE_LOG_ANALYTICS_WORKSPACE_ID"]
     rows = run_query(get_logs_client(), workspace_id, query)
     return func.HttpResponse(
-        json.dumps({"results": rows, "count": len(rows)}),
+        json.dumps({"results": rows, "count": len(rows)}, default=_json_default),
         status_code=200,
         mimetype="application/json",
     )
