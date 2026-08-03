@@ -34,6 +34,33 @@ last `role: "user"` message's `content` and forwards only that as
 `prompt` — this transformation is required, not optional; forwarding the
 raw request body to `classification` returns a 400.
 
+## CI backend deploy requires `scm-do-build-during-deployment: true` as an action input
+
+`.github/workflows/deploy-functions.yml` deploys with `Azure/functions-action@v1`.
+On Linux Consumption, that action's zip-deploy call does **not** request an
+Oryx remote build unless `scm-do-build-during-deployment: true` is passed as
+an **input to the action step itself** — setting
+`SCM_DO_BUILD_DURING_DEPLOYMENT`/`ENABLE_ORYX_BUILD` as Function App settings
+alone has no effect on the action's own deploy request.
+
+Symptom when this is missing: the deploy step reports "success", the Function
+App stays in state `Running`, and `az functionapp function list` still shows
+all functions registered (that's ARM/sync metadata, not the live host).
+But the live host's function index is actually empty
+(`GET /admin/functions?code=<masterKey>` returns `[]`), so every route
+404s — because the deployed package is just the raw checked-in source with
+no installed dependencies (confirmed via the Kudu deployment log: a plain
+`rsync` of ~90 files, vs. the ~6000+ files and tens of MB you'd see from a
+package with `azure-functions`, `openai`, etc. actually installed). The
+worker fails to import the app and silently indexes zero functions — no
+error surfaces at the host-status level.
+
+Fix: keep `scm-do-build-during-deployment: true` on the `Azure/functions-action@v1`
+step in `deploy-functions.yml`, and don't pre-vendor dependencies into
+`backend/.python_packages/lib/site-packages` in the workflow — the Python
+worker prioritizes that folder over Oryx's build output, so having both
+present risks two conflicting dependency trees.
+
 ## Why the outbound policy re-reads `classificationResult` from a variable
 
 `IResponse.Body.As<T>()` consumes the underlying response stream. Any
