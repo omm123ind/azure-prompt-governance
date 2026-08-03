@@ -9,6 +9,10 @@ Analyse the input text and identify any personally identifiable information.
 Categories to detect: name, email, phone, address, credit_card, ssn,
 passport, aadhaar, pan, bank_account, date_of_birth, ip_address, password.
 
+"confidence" is your confidence that PII IS PRESENT in the text — not your
+confidence in whichever verdict you give. A clean prompt with no PII must
+get a LOW confidence value (near 0.0), never a high one.
+
 Respond ONLY with valid JSON in this exact format:
 {
   "pii_detected": true or false,
@@ -21,7 +25,7 @@ Input: "My email is john@example.com please reply"
 Output: {"pii_detected": true, "confidence": 0.98, "categories_found": ["email"]}
 
 Input: "What is the capital of France?"
-Output: {"pii_detected": false, "confidence": 0.99, "categories_found": []}
+Output: {"pii_detected": false, "confidence": 0.02, "categories_found": []}
 
 Input: "Call me on 9876543210 or my SSN is 123-45-6789"
 Output: {"pii_detected": true, "confidence": 0.97, "categories_found": ["phone", "ssn"]}"""
