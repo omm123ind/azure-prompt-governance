@@ -40,7 +40,7 @@ Policy Engine (Blob-backed rules, 60s TTL cache)
       Event Grid ◄──────────┼─────────────────────────┘
               │             ▼
               ▼      React Dashboard
-      Teams Webhook   (MSAL/AAD auth,
+      Discord Webhook (MSAL/AAD auth,
                         4 views)
 ```
 
@@ -54,7 +54,7 @@ Policy Engine (Blob-backed rules, 60s TTL cache)
 | Azure AI Content Safety | Harm scoring (hate/violence/self-harm/sexual, 0-7) |
 | Azure Log Analytics | Central audit store (`PromptAuditLog_CL`), 90-day retention |
 | Azure Monitor | Custom metrics for anomaly detection |
-| Azure Event Grid | Routes high-severity events to the dashboard and Teams |
+| Azure Event Grid | Routes high-severity events to the dashboard and Discord |
 | Azure Active Directory | OAuth2 login for the dashboard, `compliance-admin`/`audit-viewer` roles |
 | Azure Key Vault | Secrets, accessed via Managed Identity (not yet wired — see Known Gaps) |
 | Azure Blob Storage | Policy rules JSON + anomaly-checker usage baselines |

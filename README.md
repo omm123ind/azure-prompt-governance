@@ -30,9 +30,10 @@ diagram, data flow, and privacy design decisions.
 - **Dashboard** (`dashboard/`) — React + TypeScript + MUI, MSAL/Azure AD
   login, 4 views (Live Feed, Audit Explorer, Policy Manager, Cost
   Analytics).
-- **Alerting** (`backend/alerting/`) — Teams Adaptive Card builder +
+- **Alerting** (`backend/alerting/`) — Discord embed builder +
   Event Grid publisher for high-severity events (jailbreak ≥ 0.85, PII
-  blocked, harm ≥ 5).
+  blocked, harm ≥ 5); `discord_notifier` consumes the Event Grid event
+  and posts to a Discord webhook.
 
 ## Environment variables
 
@@ -102,8 +103,10 @@ Web App — Weeks 1-4 were built and tested entirely locally. To deploy:
 3. Register an AAD app for the dashboard (see `docs/architecture.md`'s
    privacy/identity section) and set `accessTokenAcceptedVersion: 2` in
    its manifest.
-4. Provision an Event Grid topic and a Teams incoming webhook connector
-   for high-severity alerts (see `backend/alerting/`'s module docstrings).
+4. Provision an Event Grid topic and a Discord incoming webhook (Discord
+   server → channel settings → Integrations → Webhooks) for high-severity
+   alerts, and set it as the `DISCORD_WEBHOOK_URL` app setting on the
+   Function App (see `backend/alerting/`'s module docstrings).
 
 None of these four steps are automated by this repo — they're one-time
-Azure/AAD/Teams portal actions outside what CI or application code can do.
+Azure/AAD/Discord portal actions outside what CI or application code can do.

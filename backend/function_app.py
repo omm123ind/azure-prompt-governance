@@ -7,7 +7,7 @@ from anomaly_checker.function import main as anomaly_checker_main
 from api.audit_log import main as audit_log_main
 from api.user_stats import main as user_stats_main
 from api.policy_config import main as policy_config_main
-from teams_notifier.function import main as teams_notifier_main
+from discord_notifier.function import main as discord_notifier_main
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.FUNCTION)
 
@@ -52,5 +52,5 @@ def policy_config(req: func.HttpRequest) -> func.HttpResponse:
 
 
 @app.event_grid_trigger(arg_name="event")
-def teams_notifier(event: func.EventGridEvent) -> None:
-    teams_notifier_main(event)
+def discord_notifier(event: func.EventGridEvent) -> None:
+    discord_notifier_main(event)

@@ -8,7 +8,7 @@ import azure.functions as func
 from azure.eventhub import EventData, EventHubProducerClient
 
 from shared.models import AuditEvent
-from alerting.teams_card import should_alert
+from alerting.discord_card import should_alert
 from alerting.event_grid_publisher import publish_event as publish_alert_event
 
 EVENT_HUB_NAME = "eh-audit-events"
