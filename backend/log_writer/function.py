@@ -99,6 +99,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         prompt_tokens=body.get("prompt_tokens", 0),
         completion_tokens=body.get("completion_tokens", 0),
         latency_ms=body.get("latency_ms", 0),
+        block_reason=body.get("triggered_rule"),
     )
     logging.info("audit event built: %s", event.event_id)
     publish_to_event_hub(event)

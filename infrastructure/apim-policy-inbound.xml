@@ -38,6 +38,7 @@
                   new JProperty("response", ""),
                   new JProperty("classification", classification["classification"]),
                   new JProperty("action", classification["action"].ToString()),
+                  new JProperty("triggered_rule", classification["triggered_rule"]),
                   new JProperty("model", "gpt-4o-mini"),
                   new JProperty("prompt_tokens", 0),
                   new JProperty("completion_tokens", 0),

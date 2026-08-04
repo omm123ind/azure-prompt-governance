@@ -30,6 +30,7 @@
               new JProperty("response", responseText),
               new JProperty("classification", classification["classification"]),
               new JProperty("action", action),
+              new JProperty("triggered_rule", classification["triggered_rule"]),
               new JProperty("model", modelName),
               new JProperty("prompt_tokens", promptTokens),
               new JProperty("completion_tokens", completionTokens),

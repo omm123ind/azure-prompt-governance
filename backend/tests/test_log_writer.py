@@ -95,6 +95,46 @@ def test_main_triggers_alert_publish_for_high_jailbreak_score(monkeypatch):
     assert calls["should_alert_arg"]["jailbreak_score"] == 0.95
 
 
+def test_main_passes_triggered_rule_through_as_block_reason(monkeypatch):
+    captured = {}
+
+    def fake_publish_to_event_hub(event):
+        captured["event"] = event
+
+    monkeypatch.setattr(log_writer_function, "publish_to_event_hub", fake_publish_to_event_hub)
+    monkeypatch.setattr(log_writer_function, "should_alert", lambda event_dict: False)
+    monkeypatch.setattr(log_writer_function, "publish_alert_event", lambda event_dict: None)
+
+    classification = {
+        "pii_detected": True,
+        "pii_confidence": 0.99,
+        "pii_categories": ["email"],
+        "jailbreak_score": 0.0,
+        "harm_hate_score": 0,
+        "harm_violence_score": 0,
+        "harm_selfharm_score": 0,
+        "harm_sexual_score": 0,
+    }
+    req = FakeHttpRequest(
+        {
+            "prompt": "my email is john@example.com",
+            "response": "",
+            "classification": classification,
+            "action": "block",
+            "triggered_rule": "block_pii",
+            "model": "gpt-4o-mini",
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "latency_ms": 0,
+        }
+    )
+
+    response = log_writer_function.main(req)
+
+    assert response.status_code == 200
+    assert captured["event"].block_reason == "block_pii"
+
+
 def test_main_does_not_publish_alert_when_should_alert_is_false(monkeypatch):
     calls = {"published": False}
 
