@@ -61,6 +61,23 @@ step in `deploy-functions.yml`, and don't pre-vendor dependencies into
 worker prioritizes that folder over Oryx's build output, so having both
 present risks two conflicting dependency trees.
 
+## Blocked prompts need their own `log_writer` call in `inbound`
+
+The `outbound` section's `log_writer` call only runs for requests that reach
+the backend (OpenAI) and come back — but the `block` branch in `inbound`
+issues `<return-response>`, which short-circuits the pipeline and skips
+`outbound` entirely. Without a separate `log_writer` call inside the `block`
+`<when>` (before the `<return-response>`), blocked prompts — the PII and
+jailbreak cases that are the entire point of this platform — never got an
+audit record or a Teams alert, while clean prompts logged fine. Found via a
+live demo rehearsal: Scenario 1 (clean prompt) appeared in the audit trail,
+but Scenarios 2/3 (PII block, jailbreak block) never did.
+
+The inbound `log_writer` call omits `response`/`model`/token counts/latency
+(defaults to `""`/`"gpt-4o-mini"`/`0`s in `log_writer`'s payload handling)
+since the backend was never called — the prompt was blocked before reaching
+OpenAI, which `log_writer`'s existing `.get(...)` defaults already handle.
+
 ## Why the outbound policy re-reads `classificationResult` from a variable
 
 `IResponse.Body.As<T>()` consumes the underlying response stream. Any

@@ -25,6 +25,27 @@
     <set-variable name="classificationResult" value="@(((IResponse)context.Variables["classificationResponse"]).Body.As<JObject>(preserveContent: true))" />
     <choose>
       <when condition="@(((JObject)context.Variables["classificationResult"])["action"].ToString() == "block")">
+        <send-one-way-request mode="new">
+          <set-url>https://prompt-governance-functions.azurewebsites.net/api/log_writer?code={{logwriter-function-key}}</set-url>
+          <set-method>POST</set-method>
+          <set-header name="Content-Type" exists-action="override">
+            <value>application/json</value>
+          </set-header>
+          <set-body>@{
+              var classification = (JObject)context.Variables["classificationResult"];
+              var payload = new JObject(
+                  new JProperty("prompt", (string)context.Variables["promptText"]),
+                  new JProperty("response", ""),
+                  new JProperty("classification", classification["classification"]),
+                  new JProperty("action", classification["action"].ToString()),
+                  new JProperty("model", "gpt-4o-mini"),
+                  new JProperty("prompt_tokens", 0),
+                  new JProperty("completion_tokens", 0),
+                  new JProperty("latency_ms", 0)
+              );
+              return payload.ToString();
+          }</set-body>
+        </send-one-way-request>
         <return-response>
           <set-status code="403" reason="Forbidden" />
           <set-body>@(((JObject)context.Variables["classificationResult"]).ToString())</set-body>
