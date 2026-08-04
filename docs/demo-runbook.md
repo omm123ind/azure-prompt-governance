@@ -50,5 +50,5 @@ Record each rehearsal run here (spec requires demo rehearsed twice):
 
 | Run # | Date | All 6 scenarios worked? | Issues found |
 |---|---|---|---|
-| 1 | _(fill in when rehearsed)_ | | |
-| 2 | _(fill in when rehearsed)_ | | |
+| 1 | 2026-08-05 | No, initially | Fixed live during this run: (1) no CORS on Function App blocked every dashboard call; (2) `audit_log`/`user_stats` 500'd on any row with a `TimeGenerated` datetime column; (3) SWA had no SPA fallback, so direct navigation to any non-root route 404'd; (4) blocked prompts (PII/jailbreak) never reached `log_writer` because APIM's inbound `<return-response>` skips `outbound` entirely — the two scenarios that are the platform's whole point were silently never audited or alerted. All four fixed and redeployed mid-rehearsal; see commits `737efdd`, `d1a7e59`, `fbb7a56`. |
+| 2 | 2026-08-05 | Yes | All 6 scenarios re-verified against the live system after the fixes above: clean pass (200), PII block (403, now logged), jailbreak block (403, now logged), Audit Explorer/CSV, live policy threshold edit (0.8→0.01→0.8, effect confirmed with no redeploy), Cost Analytics team spend query. Teams delivery itself still needs a real Event Grid subscription to a Teams webhook — that requires the presenter's own Teams admin action, not yet configured. |
