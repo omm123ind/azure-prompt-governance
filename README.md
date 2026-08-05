@@ -7,7 +7,11 @@ policy engine, and surfaced on a compliance dashboard — with cost tracking
 and anomaly detection built in.
 
 See [`docs/architecture.md`](docs/architecture.md) for the full system
-diagram, data flow, and privacy design decisions.
+diagram, data flow, and privacy design decisions. See
+[`docs/manual-testing-guide.md`](docs/manual-testing-guide.md) to
+manually load and exercise the live deployed system yourself, or
+[`docs/demo-runbook.md`](docs/demo-runbook.md) for the scripted
+presentation flow.
 
 ## What's built
 
