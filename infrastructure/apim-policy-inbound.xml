@@ -1,6 +1,22 @@
 <policies>
   <inbound>
     <base />
+    <cors allow-credentials="false">
+      <allowed-origins>
+        <origin>*</origin>
+      </allowed-origins>
+      <allowed-methods>
+        <method>GET</method>
+        <method>POST</method>
+        <method>OPTIONS</method>
+      </allowed-methods>
+      <allowed-headers>
+        <header>*</header>
+      </allowed-headers>
+      <expose-headers>
+        <header>*</header>
+      </expose-headers>
+    </cors>
     <set-variable name="promptText" value="@{
         var reqBody = context.Request.Body.As<JObject>(preserveContent: true);
         var messages = (JArray)reqBody["messages"];
