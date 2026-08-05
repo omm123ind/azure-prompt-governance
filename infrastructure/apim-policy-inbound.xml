@@ -72,6 +72,9 @@
     <set-header name="Authorization" exists-action="override">
       <value>@("Bearer {{openai-api-key}}")</value>
     </set-header>
+    <set-header name="Accept-Encoding" exists-action="override">
+      <value>identity</value>
+    </set-header>
   </inbound>
   <backend>
     <base />

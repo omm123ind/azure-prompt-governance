@@ -78,6 +78,32 @@ The inbound `log_writer` call omits `response`/`model`/token counts/latency
 since the backend was never called — the prompt was blocked before reaching
 OpenAI, which `log_writer`'s existing `.get(...)` defaults already handle.
 
+## Backend request must strip `Accept-Encoding`, or every pass-through 500s for real clients
+
+The outbound policy's `send-one-way-request` body block reads
+`context.Response.Body.As<JObject>(preserveContent: true)` to build the
+`log_writer` payload. If the client's original request included
+`Accept-Encoding` (every browser sends this by default, as does the real
+OpenAI SDK and most HTTP client libraries — `curl` is the outlier that
+doesn't), APIM forwards it to the backend, OpenAI/Cloudflare returns a
+compressed response, and re-serializing that response after inspecting it
+as a `JObject` breaks APIM's own response write-out: the gateway itself
+returns a bare `{"statusCode": 500, "message": "Internal server error"}`,
+not an application error.
+
+This was invisible all session because every manual test used `curl`
+without `--compressed`. It was only caught by testing from a real browser
+(`fetch()`), which reproduced it 100% of the time on any prompt that
+passed through to OpenAI — meaning any real client (dashboard code,
+`openai` Python/Node SDKs, anything other than curl) would have 500'd on
+literally every clean or flagged prompt. Blocked prompts were never
+affected, since the `block` branch returns from `inbound` before the
+backend is ever called.
+
+Fix: override `Accept-Encoding` to `identity` on the backend request in
+`inbound`, right next to the `Authorization` header override, so the
+upstream response is never compressed in the first place.
+
 ## Why the outbound policy re-reads `classificationResult` from a variable
 
 `IResponse.Body.As<T>()` consumes the underlying response stream. Any
